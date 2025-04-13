@@ -42,6 +42,27 @@
     .btn:hover {
       background: #555;
     }
+    .tic-tac-toe {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 5px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .tic-tac-toe div {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      background: #fff;
+      border: 2px solid #333;
+      cursor: pointer;
+    }
+    .tic-tac-toe div.taken {
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -60,6 +81,12 @@
       <h2>Breakout Game</h2>
       <canvas id="breakout" width="400" height="400"></canvas>
     </div>
+    <!-- Tic Tac Toe Game -->
+    <div class="game-section">
+      <h2>Tic Tac Toe</h2>
+      <div id="tic-tac-toe" class="tic-tac-toe"></div>
+      <button id="restart-tic-tac-toe" class="btn">Restart Tic Tac Toe</button>
+    </div>
   </div>
   <script>
     // Snake Game Logic
@@ -68,7 +95,7 @@
     const snakeBox = 20;
 
     let snakeGameInterval;
-    let snake, food, direction, score;
+    let snake, food, direction, score, directionChanged;
 
     function initSnakeGame() {
       snake = [{ x: 10 * snakeBox, y: 10 * snakeBox }];
@@ -77,6 +104,7 @@
         y: Math.floor(Math.random() * 20) * snakeBox,
       };
       direction = null;
+      directionChanged = false;
       score = 0;
 
       if (snakeGameInterval) clearInterval(snakeGameInterval);
@@ -86,10 +114,12 @@
     document.getElementById("restart-snake").addEventListener("click", initSnakeGame);
 
     document.addEventListener("keydown", (event) => {
+      if (directionChanged) return; // Prevent multiple direction changes in one frame
       if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
       else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
       else if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
       else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+      directionChanged = true;
     });
 
     function drawSnakeGame() {
@@ -136,6 +166,7 @@
       }
 
       snake.unshift(newHead);
+      directionChanged = false;
     }
 
     initSnakeGame();
@@ -237,6 +268,62 @@
     }
 
     drawBreakoutGame();
+
+    // Tic Tac Toe Game Logic
+    const ticTacToeContainer = document.getElementById("tic-tac-toe");
+    const restartTicTacToeBtn = document.getElementById("restart-tic-tac-toe");
+
+    let ticTacToeBoard = Array(9).fill(null);
+    let currentPlayer = "X";
+
+    function initTicTacToe() {
+      ticTacToeBoard = Array(9).fill(null);
+      currentPlayer = "X";
+      ticTacToeContainer.innerHTML = "";
+      createTicTacToeBoard();
+    }
+
+    function createTicTacToeBoard() {
+      ticTacToeBoard.forEach((_, index) => {
+        const cell = document.createElement("div");
+        cell.addEventListener("click", () => makeMove(index));
+        ticTacToeContainer.appendChild(cell);
+      });
+    }
+
+    function makeMove(index) {
+      if (ticTacToeBoard[index]) return;
+
+      ticTacToeBoard[index] = currentPlayer;
+      const cell = ticTacToeContainer.children[index];
+      cell.textContent = currentPlayer;
+      cell.classList.add("taken");
+
+      if (checkWinner()) {
+        setTimeout(() => alert(`${currentPlayer} wins!`), 100);
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+    }
+
+    function checkWinner() {
+      const winningCombinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+        [0, 4, 8], [2, 4, 6],           // diagonals
+      ];
+
+      return winningCombinations.some((combination) => {
+        const [a, b, c] = combination;
+        return ticTacToeBoard[a] &&
+               ticTacToeBoard[a] === ticTacToeBoard[b] &&
+               ticTacToeBoard[a] === ticTacToeBoard[c];
+      });
+    }
+
+    restartTicTacToeBtn.addEventListener("click", initTicTacToe);
+    initTicTacToe();
   </script>
 </body>
 </html>
