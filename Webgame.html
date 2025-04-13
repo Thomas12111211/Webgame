@@ -29,23 +29,18 @@
       border: 2px solid #333;
       background: #000;
     }
-    .tic-tac-toe {
-      display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-gap: 5px;
-      justify-content: center;
-    }
-    .cell {
-      width: 100px;
-      height: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: bold;
-      background: #fff;
-      border: 1px solid #333;
+    .btn {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #333;
+      color: #fff;
+      border: none;
       cursor: pointer;
+    }
+    .btn:hover {
+      background: #555;
     }
   </style>
 </head>
@@ -57,27 +52,38 @@
     <!-- Snake Game -->
     <div class="game-section">
       <h2>Snake Game</h2>
+      <button id="restart-snake" class="btn">Restart Snake Game</button>
       <canvas id="snake" width="400" height="400"></canvas>
     </div>
-    <!-- Tic-Tac-Toe -->
+    <!-- Breakout Game -->
     <div class="game-section">
-      <h2>Tic-Tac-Toe</h2>
-      <div id="tic-tac-toe" class="tic-tac-toe"></div>
+      <h2>Breakout Game</h2>
+      <canvas id="breakout" width="400" height="400"></canvas>
     </div>
   </div>
   <script>
     // Snake Game Logic
-    const canvas = document.getElementById("snake");
-    const ctx = canvas.getContext("2d");
-    const box = 20;
+    const snakeCanvas = document.getElementById("snake");
+    const ctxSnake = snakeCanvas.getContext("2d");
+    const snakeBox = 20;
 
-    let snake = [{ x: 10 * box, y: 10 * box }];
-    let food = {
-      x: Math.floor(Math.random() * 20) * box,
-      y: Math.floor(Math.random() * 20) * box,
-    };
-    let direction;
-    let score = 0;
+    let snakeGameInterval;
+    let snake, food, direction, score;
+
+    function initSnakeGame() {
+      snake = [{ x: 10 * snakeBox, y: 10 * snakeBox }];
+      food = {
+        x: Math.floor(Math.random() * 20) * snakeBox,
+        y: Math.floor(Math.random() * 20) * snakeBox,
+      };
+      direction = null;
+      score = 0;
+
+      if (snakeGameInterval) clearInterval(snakeGameInterval);
+      snakeGameInterval = setInterval(drawSnakeGame, 100);
+    }
+
+    document.getElementById("restart-snake").addEventListener("click", initSnakeGame);
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
@@ -86,31 +92,31 @@
       else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
     });
 
-    function drawGame() {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function drawSnakeGame() {
+      ctxSnake.fillStyle = "#000";
+      ctxSnake.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
 
       for (let i = 0; i < snake.length; i++) {
-        ctx.fillStyle = i === 0 ? "#0f0" : "#fff";
-        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctxSnake.fillStyle = i === 0 ? "#0f0" : "#fff";
+        ctxSnake.fillRect(snake[i].x, snake[i].y, snakeBox, snakeBox);
       }
 
-      ctx.fillStyle = "red";
-      ctx.fillRect(food.x, food.y, box, box);
+      ctxSnake.fillStyle = "red";
+      ctxSnake.fillRect(food.x, food.y, snakeBox, snakeBox);
 
       let snakeX = snake[0].x;
       let snakeY = snake[0].y;
 
-      if (direction === "UP") snakeY -= box;
-      if (direction === "DOWN") snakeY += box;
-      if (direction === "LEFT") snakeX -= box;
-      if (direction === "RIGHT") snakeX += box;
+      if (direction === "UP") snakeY -= snakeBox;
+      if (direction === "DOWN") snakeY += snakeBox;
+      if (direction === "LEFT") snakeX -= snakeBox;
+      if (direction === "RIGHT") snakeX += snakeBox;
 
       if (snakeX === food.x && snakeY === food.y) {
         score++;
         food = {
-          x: Math.floor(Math.random() * 20) * box,
-          y: Math.floor(Math.random() * 20) * box,
+          x: Math.floor(Math.random() * 20) * snakeBox,
+          y: Math.floor(Math.random() * 20) * snakeBox,
         };
       } else {
         snake.pop();
@@ -121,76 +127,116 @@
       if (
         snakeX < 0 ||
         snakeY < 0 ||
-        snakeX >= canvas.width ||
-        snakeY >= canvas.height ||
+        snakeX >= snakeCanvas.width ||
+        snakeY >= snakeCanvas.height ||
         snake.some((segment) => segment.x === snakeX && segment.y === snakeY)
       ) {
-        clearInterval(game);
+        clearInterval(snakeGameInterval);
         alert("Game Over! Your score: " + score);
       }
 
       snake.unshift(newHead);
     }
 
-    let game = setInterval(drawGame, 100);
+    initSnakeGame();
 
-    // Tic-Tac-Toe Game Logic
-    const ticTacToe = document.getElementById("tic-tac-toe");
-    const cells = Array.from({ length: 9 }, () => "");
-    let currentPlayer = "X";
+    // Breakout Game Logic
+    const breakoutCanvas = document.getElementById("breakout");
+    const ctxBreakout = breakoutCanvas.getContext("2d");
 
-    function renderBoard() {
-      ticTacToe.innerHTML = "";
-      cells.forEach((cell, index) => {
-        const div = document.createElement("div");
-        div.className = "cell";
-        div.textContent = cell;
-        div.addEventListener("click", () => makeMove(index));
-        ticTacToe.appendChild(div);
-      });
+    let paddle = { x: 150, y: 370, width: 100, height: 10 };
+    let ball = { x: 200, y: 200, dx: 2, dy: -2, radius: 10 };
+    let bricks = [];
+    let rows = 3;
+    let cols = 5;
+    let brickWidth = 70;
+    let brickHeight = 20;
+    let brickPadding = 10;
+
+    for (let r = 0; r < rows; r++) {
+      bricks[r] = [];
+      for (let c = 0; c < cols; c++) {
+        bricks[r][c] = { x: c * (brickWidth + brickPadding) + 30, y: r * (brickHeight + brickPadding) + 30, status: 1 };
+      }
     }
 
-    function makeMove(index) {
-      if (cells[index] !== "") return;
-      cells[index] = currentPlayer;
-      currentPlayer = currentPlayer === "X" ? "O" : "X";
-      renderBoard();
-      checkWinner();
-    }
+    document.addEventListener("mousemove", (event) => {
+      let rect = breakoutCanvas.getBoundingClientRect();
+      let mouseX = event.clientX - rect.left;
+      paddle.x = Math.max(0, Math.min(mouseX - paddle.width / 2, breakoutCanvas.width - paddle.width));
+    });
 
-    function checkWinner() {
-      const winningCombos = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6],
-      ];
+    function drawBreakoutGame() {
+      ctxBreakout.clearRect(0, 0, breakoutCanvas.width, breakoutCanvas.height);
 
-      for (const combo of winningCombos) {
-        const [a, b, c] = combo;
-        if (cells[a] && cells[a] === cells[b] && cells[b] === cells[c]) {
-          setTimeout(() => alert(`${cells[a]} wins!`), 100);
-          resetBoard();
-          return;
+      // Draw paddle
+      ctxBreakout.fillStyle = "#fff";
+      ctxBreakout.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+      // Draw ball
+      ctxBreakout.beginPath();
+      ctxBreakout.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctxBreakout.fillStyle = "red";
+      ctxBreakout.fill();
+      ctxBreakout.closePath();
+
+      // Draw bricks
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (bricks[r][c].status === 1) {
+            let brickX = bricks[r][c].x;
+            let brickY = bricks[r][c].y;
+            ctxBreakout.fillStyle = "#0f0";
+            ctxBreakout.fillRect(brickX, brickY, brickWidth, brickHeight);
+          }
         }
       }
 
-      if (!cells.includes("")) {
-        setTimeout(() => alert("It's a tie!"), 100);
-        resetBoard();
+      // Ball movement
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // Wall collisions
+      if (ball.x + ball.radius > breakoutCanvas.width || ball.x - ball.radius < 0) ball.dx = -ball.dx;
+      if (ball.y - ball.radius < 0) ball.dy = -ball.dy;
+
+      // Paddle collision
+      if (
+        ball.x > paddle.x &&
+        ball.x < paddle.x + paddle.width &&
+        ball.y + ball.radius > paddle.y
+      ) {
+        ball.dy = -ball.dy;
       }
+
+      // Brick collision
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let brick = bricks[r][c];
+          if (brick.status === 1) {
+            if (
+              ball.x > brick.x &&
+              ball.x < brick.x + brickWidth &&
+              ball.y > brick.y &&
+              ball.y < brick.y + brickHeight
+            ) {
+              ball.dy = -ball.dy;
+              brick.status = 0;
+            }
+          }
+        }
+      }
+
+      // Game over
+      if (ball.y + ball.radius > breakoutCanvas.height) {
+        alert("Game Over!");
+        document.location.reload();
+      }
+
+      requestAnimationFrame(drawBreakoutGame);
     }
 
-    function resetBoard() {
-      cells.fill("");
-      renderBoard();
-    }
-
-    renderBoard();
+    drawBreakoutGame();
   </script>
 </body>
 </html>
