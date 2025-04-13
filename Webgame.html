@@ -125,7 +125,7 @@
     document.getElementById("restart-snake").addEventListener("click", initSnakeGame);
 
     document.addEventListener("keydown", (event) => {
-      if (directionChanged) return; // Prevent multiple direction changes in one frame
+      if (directionChanged) return;
       if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
       else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
       else if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
@@ -184,25 +184,131 @@
     const breakoutCanvas = document.getElementById("breakout");
     const ctxBreakout = breakoutCanvas.getContext("2d");
 
-    let breakoutGameRunning = false;
+    const paddleHeight = 10;
+    const paddleWidth = 75;
+    let paddleX = (breakoutCanvas.width - paddleWidth) / 2;
 
-    function startBreakoutGame() {
-      document.getElementById('start-breakout').style.display = 'none';
-      breakoutCanvas.style.display = 'block';
-      if (!breakoutGameRunning) {
-        breakoutGameRunning = true;
-        drawBreakoutGame();
+    const ballRadius = 10;
+    let x = breakoutCanvas.width / 2;
+    let y = breakoutCanvas.height - 30;
+    let dx = 2;
+    let dy = -2;
+
+    const brickRowCount = 5;
+    const brickColumnCount = 7;
+    const brickWidth = 50;
+    const brickHeight = 20;
+    const brickPadding = 10;
+    const brickOffsetTop = 30;
+    const brickOffsetLeft = 35;
+
+    let bricks = [];
+    for (let c = 0; c < brickColumnCount; c++) {
+      bricks[c] = [];
+      for (let r = 0; r < brickRowCount; r++) {
+        bricks[c][r] = { x: 0, y: 0, status: 1 };
       }
     }
 
-    document.getElementById("start-breakout").addEventListener("click", startBreakoutGame);
+    let rightPressed = false;
+    let leftPressed = false;
 
-    function drawBreakoutGame() {
-      ctxBreakout.clearRect(0, 0, breakoutCanvas.width, breakoutCanvas.height);
-      // Breakout game logic goes here
-      // ...
-      requestAnimationFrame(drawBreakoutGame);
+    function drawBricks() {
+      for (let c = 0; c < brickColumnCount; c++) {
+        for (let r = 0; r < brickRowCount; r++) {
+          if (bricks[c][r].status === 1) {
+            const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+            const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+            bricks[c][r].x = brickX;
+            bricks[c][r].y = brickY;
+            ctxBreakout.fillStyle = "#0095DD";
+            ctxBreakout.fillRect(brickX, brickY, brickWidth, brickHeight);
+          }
+        }
+      }
     }
+
+    function drawBall() {
+      ctxBreakout.beginPath();
+      ctxBreakout.arc(x, y, ballRadius, 0, Math.PI * 2);
+      ctxBreakout.fillStyle = "#0095DD";
+      ctxBreakout.fill();
+      ctxBreakout.closePath();
+    }
+
+    function drawPaddle() {
+      ctxBreakout.fillStyle = "#0095DD";
+      ctxBreakout.fillRect(paddleX, breakoutCanvas.height - paddleHeight, paddleWidth, paddleHeight);
+    }
+
+    function collisionDetection() {
+      for (let c = 0; c < brickColumnCount; c++) {
+        for (let r = 0; r < brickRowCount; r++) {
+          const brick = bricks[c][r];
+          if (brick.status === 1) {
+            if (
+              x > brick.x &&
+              x < brick.x + brickWidth &&
+              y > brick.y &&
+              y < brick.y + brickHeight
+            ) {
+              dy = -dy;
+              brick.status = 0;
+            }
+          }
+        }
+      }
+    }
+
+    function draw() {
+      ctxBreakout.clearRect(0, 0, breakoutCanvas.width, breakoutCanvas.height);
+      drawBricks();
+      drawBall();
+      drawPaddle();
+      collisionDetection();
+
+      if (x + dx > breakoutCanvas.width - ballRadius || x + dx < ballRadius) {
+        dx = -dx;
+      }
+      if (y + dy < ballRadius) {
+        dy = -dy;
+      } else if (y + dy > breakoutCanvas.height - ballRadius) {
+        if (x > paddleX && x < paddleX + paddleWidth) {
+          dy = -dy;
+        } else {
+          alert("GAME OVER");
+          document.location.reload();
+          return;
+        }
+      }
+
+      x += dx;
+      y += dy;
+
+      if (rightPressed && paddleX < breakoutCanvas.width - paddleWidth) {
+        paddleX += 7;
+      } else if (leftPressed && paddleX > 0) {
+        paddleX -= 7;
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
+      else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+      if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
+      else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+    });
+
+    document.getElementById("start-breakout").addEventListener("click", () => {
+      document.getElementById("start-breakout").style.display = "none";
+      breakoutCanvas.style.display = "block";
+      draw();
+    });
 
     // Tic Tac Toe Logic
     const ticTacToeContainer = document.getElementById("tic-tac-toe");
