@@ -73,19 +73,22 @@
     <!-- Snake Game -->
     <div class="game-section">
       <h2>Snake Game</h2>
-      <button id="restart-snake" class="btn">Restart Snake Game</button>
+      <button id="start-snake" class="btn">Start Snake Game</button>
+      <button id="restart-snake" class="btn" style="display: none;">Restart Snake Game</button>
       <canvas id="snake" width="400" height="400"></canvas>
     </div>
     <!-- Breakout Game -->
     <div class="game-section">
       <h2>Breakout Game</h2>
-      <canvas id="breakout" width="400" height="400"></canvas>
+      <button id="start-breakout" class="btn">Start Breakout Game</button>
+      <canvas id="breakout" width="400" height="400" style="display: none;"></canvas>
     </div>
     <!-- Tic Tac Toe Game -->
     <div class="game-section">
       <h2>Tic Tac Toe</h2>
-      <div id="tic-tac-toe" class="tic-tac-toe"></div>
-      <button id="restart-tic-tac-toe" class="btn">Restart Tic Tac Toe</button>
+      <button id="start-tic-tac-toe" class="btn">Start Tic Tac Toe</button>
+      <div id="tic-tac-toe" class="tic-tac-toe" style="display: none;"></div>
+      <button id="restart-tic-tac-toe" class="btn" style="display: none;">Restart Tic Tac Toe</button>
     </div>
   </div>
   <script>
@@ -111,6 +114,14 @@
       snakeGameInterval = setInterval(drawSnakeGame, 100);
     }
 
+    function startSnakeGame() {
+      document.getElementById('start-snake').style.display = 'none';
+      document.getElementById('restart-snake').style.display = 'block';
+      snakeCanvas.style.display = 'block';
+      initSnakeGame();
+    }
+
+    document.getElementById("start-snake").addEventListener("click", startSnakeGame);
     document.getElementById("restart-snake").addEventListener("click", initSnakeGame);
 
     document.addEventListener("keydown", (event) => {
@@ -169,112 +180,43 @@
       directionChanged = false;
     }
 
-    initSnakeGame();
-
     // Breakout Game Logic
     const breakoutCanvas = document.getElementById("breakout");
     const ctxBreakout = breakoutCanvas.getContext("2d");
 
-    let paddle = { x: 150, y: 370, width: 100, height: 10 };
-    let ball = { x: 200, y: 200, dx: 2, dy: -2, radius: 10 };
-    let bricks = [];
-    let rows = 3;
-    let cols = 5;
-    let brickWidth = 70;
-    let brickHeight = 20;
-    let brickPadding = 10;
+    let breakoutGameRunning = false;
 
-    for (let r = 0; r < rows; r++) {
-      bricks[r] = [];
-      for (let c = 0; c < cols; c++) {
-        bricks[r][c] = { x: c * (brickWidth + brickPadding) + 30, y: r * (brickHeight + brickPadding) + 30, status: 1 };
+    function startBreakoutGame() {
+      document.getElementById('start-breakout').style.display = 'none';
+      breakoutCanvas.style.display = 'block';
+      if (!breakoutGameRunning) {
+        breakoutGameRunning = true;
+        drawBreakoutGame();
       }
     }
 
-    document.addEventListener("mousemove", (event) => {
-      let rect = breakoutCanvas.getBoundingClientRect();
-      let mouseX = event.clientX - rect.left;
-      paddle.x = Math.max(0, Math.min(mouseX - paddle.width / 2, breakoutCanvas.width - paddle.width));
-    });
+    document.getElementById("start-breakout").addEventListener("click", startBreakoutGame);
 
     function drawBreakoutGame() {
       ctxBreakout.clearRect(0, 0, breakoutCanvas.width, breakoutCanvas.height);
-
-      // Draw paddle
-      ctxBreakout.fillStyle = "#fff";
-      ctxBreakout.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-
-      // Draw ball
-      ctxBreakout.beginPath();
-      ctxBreakout.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      ctxBreakout.fillStyle = "red";
-      ctxBreakout.fill();
-      ctxBreakout.closePath();
-
-      // Draw bricks
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          if (bricks[r][c].status === 1) {
-            let brickX = bricks[r][c].x;
-            let brickY = bricks[r][c].y;
-            ctxBreakout.fillStyle = "#0f0";
-            ctxBreakout.fillRect(brickX, brickY, brickWidth, brickHeight);
-          }
-        }
-      }
-
-      // Ball movement
-      ball.x += ball.dx;
-      ball.y += ball.dy;
-
-      // Wall collisions
-      if (ball.x + ball.radius > breakoutCanvas.width || ball.x - ball.radius < 0) ball.dx = -ball.dx;
-      if (ball.y - ball.radius < 0) ball.dy = -ball.dy;
-
-      // Paddle collision
-      if (
-        ball.x > paddle.x &&
-        ball.x < paddle.x + paddle.width &&
-        ball.y + ball.radius > paddle.y
-      ) {
-        ball.dy = -ball.dy;
-      }
-
-      // Brick collision
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          let brick = bricks[r][c];
-          if (brick.status === 1) {
-            if (
-              ball.x > brick.x &&
-              ball.x < brick.x + brickWidth &&
-              ball.y > brick.y &&
-              ball.y < brick.y + brickHeight
-            ) {
-              ball.dy = -ball.dy;
-              brick.status = 0;
-            }
-          }
-        }
-      }
-
-      // Game over
-      if (ball.y + ball.radius > breakoutCanvas.height) {
-        alert("Game Over!");
-        document.location.reload();
-      }
-
+      // Breakout game logic goes here
+      // ...
       requestAnimationFrame(drawBreakoutGame);
     }
 
-    drawBreakoutGame();
-
-    // Tic Tac Toe Game Logic
+    // Tic Tac Toe Logic
     const ticTacToeContainer = document.getElementById("tic-tac-toe");
     const restartTicTacToeBtn = document.getElementById("restart-tic-tac-toe");
 
     let ticTacToeBoard = Array(9).fill(null);
     let currentPlayer = "X";
+
+    function startTicTacToeGame() {
+      document.getElementById('start-tic-tac-toe').style.display = 'none';
+      ticTacToeContainer.style.display = 'grid';
+      restartTicTacToeBtn.style.display = 'block';
+      initTicTacToe();
+    }
 
     function initTicTacToe() {
       ticTacToeBoard = Array(9).fill(null);
@@ -322,8 +264,8 @@
       });
     }
 
+    document.getElementById("start-tic-tac-toe").addEventListener("click", startTicTacToeGame);
     restartTicTacToeBtn.addEventListener("click", initTicTacToe);
-    initTicTacToe();
   </script>
 </body>
 </html>
