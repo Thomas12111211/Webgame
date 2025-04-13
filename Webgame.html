@@ -20,17 +20,32 @@
     .container {
       padding: 20px;
     }
-    .game-card {
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      background: #fff;
-      padding: 15px;
-      margin: 10px 0;
-      text-align: center;
+    .game-section {
+      margin-bottom: 40px;
     }
-    .game-card iframe {
-      width: 100%;
-      height: 400px;
+    canvas {
+      display: block;
+      margin: 20px auto;
+      border: 2px solid #333;
+      background: #000;
+    }
+    .tic-tac-toe {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 5px;
+      justify-content: center;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      background: #fff;
+      border: 1px solid #333;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -39,14 +54,143 @@
     <h1>Free Games to Play</h1>
   </header>
   <div class="container">
-    <div class="game-card">
-      <h2>Game 1: Snake</h2>
-      <iframe src="https://play.snake-game.online/" title="Snake Game"></iframe>
+    <!-- Snake Game -->
+    <div class="game-section">
+      <h2>Snake Game</h2>
+      <canvas id="snake" width="400" height="400"></canvas>
     </div>
-    <div class="game-card">
-      <h2>Game 2: Tetris</h2>
-      <iframe src="https://tetr.io/" title="Tetris Game"></iframe>
+    <!-- Tic-Tac-Toe -->
+    <div class="game-section">
+      <h2>Tic-Tac-Toe</h2>
+      <div id="tic-tac-toe" class="tic-tac-toe"></div>
     </div>
   </div>
+  <script>
+    // Snake Game Logic
+    const canvas = document.getElementById("snake");
+    const ctx = canvas.getContext("2d");
+    const box = 20;
+
+    let snake = [{ x: 10 * box, y: 10 * box }];
+    let food = {
+      x: Math.floor(Math.random() * 20) * box,
+      y: Math.floor(Math.random() * 20) * box,
+    };
+    let direction;
+    let score = 0;
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+      else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+      else if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+      else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+    });
+
+    function drawGame() {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "#0f0" : "#fff";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x, food.y, box, box);
+
+      let snakeX = snake[0].x;
+      let snakeY = snake[0].y;
+
+      if (direction === "UP") snakeY -= box;
+      if (direction === "DOWN") snakeY += box;
+      if (direction === "LEFT") snakeX -= box;
+      if (direction === "RIGHT") snakeX += box;
+
+      if (snakeX === food.x && snakeY === food.y) {
+        score++;
+        food = {
+          x: Math.floor(Math.random() * 20) * box,
+          y: Math.floor(Math.random() * 20) * box,
+        };
+      } else {
+        snake.pop();
+      }
+
+      let newHead = { x: snakeX, y: snakeY };
+
+      if (
+        snakeX < 0 ||
+        snakeY < 0 ||
+        snakeX >= canvas.width ||
+        snakeY >= canvas.height ||
+        snake.some((segment) => segment.x === snakeX && segment.y === snakeY)
+      ) {
+        clearInterval(game);
+        alert("Game Over! Your score: " + score);
+      }
+
+      snake.unshift(newHead);
+    }
+
+    let game = setInterval(drawGame, 100);
+
+    // Tic-Tac-Toe Game Logic
+    const ticTacToe = document.getElementById("tic-tac-toe");
+    const cells = Array.from({ length: 9 }, () => "");
+    let currentPlayer = "X";
+
+    function renderBoard() {
+      ticTacToe.innerHTML = "";
+      cells.forEach((cell, index) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.textContent = cell;
+        div.addEventListener("click", () => makeMove(index));
+        ticTacToe.appendChild(div);
+      });
+    }
+
+    function makeMove(index) {
+      if (cells[index] !== "") return;
+      cells[index] = currentPlayer;
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      renderBoard();
+      checkWinner();
+    }
+
+    function checkWinner() {
+      const winningCombos = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+
+      for (const combo of winningCombos) {
+        const [a, b, c] = combo;
+        if (cells[a] && cells[a] === cells[b] && cells[b] === cells[c]) {
+          setTimeout(() => alert(`${cells[a]} wins!`), 100);
+          resetBoard();
+          return;
+        }
+      }
+
+      if (!cells.includes("")) {
+        setTimeout(() => alert("It's a tie!"), 100);
+        resetBoard();
+      }
+    }
+
+    function resetBoard() {
+      cells.fill("");
+      renderBoard();
+    }
+
+    renderBoard();
+  </script>
 </body>
 </html>
